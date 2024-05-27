@@ -1,0 +1,150 @@
+﻿@using Microsoft.AspNetCore.Components;
+@using System.Text.Json;
+@using Invoice.Models;
+@using Invoice.Services;
+@page "/"
+
+
+
+<div class="container">
+    <h1>Welcome to Cupprint Accounts</h1>
+    <!-- Select Option -->
+    <div class="form-group mt-3">
+        <select id="options" class="form-control" @bind="selectedOption">
+            <option selected disabled="disabled">Select Company</option>
+            <option value="UPS">UPS</option>
+            <option value="STL">STL</option>
+            <option value="Eoin Gavin">Eoin Gavin</option>
+            <option value="DB Schenker">DB Schenker</option>
+        </select>
+    </div>
+
+    <!-- File Picker -->
+    <div class="form-group mt-3">
+        <div class="selected-path-border">
+            <input class="inputs" value="@selectedPath" />
+            <button class="btn btn-primary" @onclick="GetFilePathAsync">Select file</button>
+        </div>
+    </div>
+    <div>
+        <button class="btn btn-outline-success submitButton" @onclick="() => modal.Open()">Upload</button>
+    </div>
+</div>
+
+
+<!-- Modal FOR Column Options-->
+<div class="modal @modal.ModalClass" tabindex="-1" role="dialog" style="display:@modal.ModalDisplay">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Excel Columns</h5>
+            </div>
+            <div class="modal-body">
+                <!-- Input fields with descriptions aligned to the left -->
+                <div class="form-group">
+                    <label for="jobNo">Job No:</label>
+                    <input type="text" id="jobNo" class="form-control" @bind="jobNo" />
+                </div>
+                <div class="form-group">
+                    <label for="baseRate">Base Rate:</label>
+                    <input type="text" id="baseRate" class="form-control" @bind="baseRate" />
+                </div>
+                <div class="form-group">
+                    <label for="invoiceNo">Invoice No:</label>
+                    <input type="text" id="invoiceNo" class="form-control" @bind="invoiceNo" />
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity:</label>
+                    <input type="text" id="quantity" class="form-control" @bind="quantity" />
+                </div>
+                <div class="form-group">
+                    <label for="downloadDate">Download Date:</label>
+                    <input type="text" id="downloadDate" class="form-control" @bind="downloadDate" />
+                </div>
+                <div class="form-group">
+                    <label for="invoiceDate">Invoice Date:</label>
+                    <input type="text" id="invoiceDate" class="form-control" @bind="invoiceDate" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick='() => MoveToView()'>Save changes</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="() => modal.Close()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@if (modal.ShowBackdrop)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+
+@code {
+    // Other code here
+
+    [Inject]
+    private NavigationManager? NavigationManager { get; set; }
+
+    private string? selectedOption;
+
+    private string? selectedPath;
+
+    private string? jobNo { get; set; }
+    private string? baseRate { get; set; }
+    private string? quantity { get; set; }
+    private string? invoiceNo { get; set; }
+    private string? downloadDate { get; set; }
+    private string? invoiceDate { get; set; }
+
+    // Get file path
+    private async Task GetFilePathAsync()
+    {
+        FileService fileService = new FileService();
+        selectedPath = await fileService.FilePick();
+
+    }
+
+    // Move to Reconcile page
+    public void MoveToView()
+    {
+        var check = new Mod();
+
+        if (selectedOption is not null && selectedPath is not null)
+        {
+
+            check = new Mod()
+                {
+                    test1 = selectedPath,
+                    test2 = selectedOption,
+                    test3 = "test"
+                };
+        }
+        // Serialize the object to a JSON string
+        var json = JsonSerializer.Serialize(check);
+
+        // Encode the JSON string to make it safe for use in a URL
+        var encodedJson = Uri.EscapeDataString(json);
+
+        // Navigate to the URL with the encoded JSON string as a query parameter
+        NavigationManager?.NavigateTo($"/reconciled?data={encodedJson}");
+
+    }
+
+
+
+    private ModalService modal = new();
+    public void OpenModal()
+    {
+        modal.Open();
+        StateHasChanged();
+    }
+
+    public void CloseModal()
+    {
+        modal.Close();
+        StateHasChanged();
+    }
+}
